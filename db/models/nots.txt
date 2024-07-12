@@ -1,0 +1,6 @@
+addNewTask(){}
+deleteTask(tskid){}
+editTask(tskid,new value){}
+addSubtask(tskid)
+deleteSubTask(tskid){}
+editSubTask(tskid, new titile value){}
