@@ -7,7 +7,10 @@ const bodyParser = require('body-parser');
 
 const { List } = require('./db/models/list.model');
 const { Task } = require('./db/models/task.model');
+const {User} = require('./db/models/users.model');
 
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const cors = require('cors');
 const corsOptions ={
@@ -125,6 +128,63 @@ app.delete('/lists/:lid/tasks/:tid', (req,res)=>{
     })
 })
 
+    // Register endpoint
+    app.post('/register', async (req, res) => {
+        const { username, password } = req.body;
+    
+        try {
+        // Check if user already exists
+        let user = await User.findOne({ username });
+        if (user) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+    
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+    
+        // Create new user
+        user = new User({
+            username,
+            password: hashedPassword,
+        });
+    
+        await user.save();
+        res.status(201).json({ message: 'User registered successfully' });
+        } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+        }
+    });
+
+
+// Login endpoint
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+  
+    try {
+      // Check if the user exists
+      const user = await User.findOne({ username });
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Check if the password is correct
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+  
+      // Create a JWT token
+      const token = jwt.sign({ userId: user._id, username: user.username }, 'your_jwt_secret', { expiresIn: '1h' });
+  
+      res.status(200).json({ token });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
+  
 app.listen(3000,() =>{
     console.log("Server started at port 3000");
 })
